@@ -1,98 +1,93 @@
-import { Image } from 'expo-image';
-import { Platform, StyleSheet } from 'react-native';
-
-import { HelloWave } from '@/components/hello-wave';
-import ParallaxScrollView from '@/components/parallax-scroll-view';
-import { ThemedText } from '@/components/themed-text';
-import { ThemedView } from '@/components/themed-view';
-import { Link } from 'expo-router';
+import React from 'react';
+import { View, StyleSheet, Text } from 'react-native';
+import { LiveMap } from '../../components/map/LiveMap';
+import { SOSButton } from '../../components/ui/SOSButton';
+import { StatusPill } from '../../components/ui/StatusPill';
+import { useSOSFlow } from '../../hooks/useSOSFlow';
+import { useAppStore } from '../../store/useAppStore';
+import { COLORS, FONTS, SIZES } from '../../constants/theme';
+import { SafeAreaView } from 'react-native-safe-area-context';
+import { router } from 'expo-router';
 
 export default function HomeScreen() {
-  return (
-    <ParallaxScrollView
-      headerBackgroundColor={{ light: '#A1CEDC', dark: '#1D3D47' }}
-      headerImage={
-        <Image
-          source={require('@/assets/images/partial-react-logo.png')}
-          style={styles.reactLogo}
-        />
-      }>
-      <ThemedView style={styles.titleContainer}>
-        <ThemedText type="title">Welcome!</ThemedText>
-        <HelloWave />
-      </ThemedView>
-      <ThemedView style={styles.stepContainer}>
-        <ThemedText type="subtitle">Step 1: Try it</ThemedText>
-        <ThemedText>
-          Edit <ThemedText type="defaultSemiBold">app/(tabs)/index.tsx</ThemedText> to see changes.
-          Press{' '}
-          <ThemedText type="defaultSemiBold">
-            {Platform.select({
-              ios: 'cmd + d',
-              android: 'cmd + m',
-              web: 'F12',
-            })}
-          </ThemedText>{' '}
-          to open developer tools.
-        </ThemedText>
-      </ThemedView>
-      <ThemedView style={styles.stepContainer}>
-        <Link href="/modal">
-          <Link.Trigger>
-            <ThemedText type="subtitle">Step 2: Explore</ThemedText>
-          </Link.Trigger>
-          <Link.Preview />
-          <Link.Menu>
-            <Link.MenuAction title="Action" icon="cube" onPress={() => alert('Action pressed')} />
-            <Link.MenuAction
-              title="Share"
-              icon="square.and.arrow.up"
-              onPress={() => alert('Share pressed')}
-            />
-            <Link.Menu title="More" icon="ellipsis">
-              <Link.MenuAction
-                title="Delete"
-                icon="trash"
-                destructive
-                onPress={() => alert('Delete pressed')}
-              />
-            </Link.Menu>
-          </Link.Menu>
-        </Link>
+  const { triggerSOS } = useSOSFlow();
+  const { guardianMode, isSOSActive } = useAppStore();
 
-        <ThemedText>
-          {`Tap the Explore tab to learn more about what's included in this starter app.`}
-        </ThemedText>
-      </ThemedView>
-      <ThemedView style={styles.stepContainer}>
-        <ThemedText type="subtitle">Step 3: Get a fresh start</ThemedText>
-        <ThemedText>
-          {`When you're ready, run `}
-          <ThemedText type="defaultSemiBold">npm run reset-project</ThemedText> to get a fresh{' '}
-          <ThemedText type="defaultSemiBold">app</ThemedText> directory. This will move the current{' '}
-          <ThemedText type="defaultSemiBold">app</ThemedText> to{' '}
-          <ThemedText type="defaultSemiBold">app-example</ThemedText>.
-        </ThemedText>
-      </ThemedView>
-    </ParallaxScrollView>
+  const handleSOSPress = () => {
+    // Normal press could just show a confirmation or do nothing, 
+    // but the prompt says "One-tap SOS" or "Long-press for instant".
+    // We'll trigger it immediately to be safe, but they also asked for a long press.
+    triggerSOS('manual_sos');
+    router.push('/sos');
+  };
+
+  const handleSOSLongPress = () => {
+    triggerSOS('manual_sos');
+    router.push('/sos');
+  };
+
+  return (
+    <View style={styles.container}>
+      <LiveMap />
+
+      <SafeAreaView style={styles.overlay} edges={['top']}>
+        {/* HUD Top */}
+        <View style={styles.hudTop}>
+          <StatusPill 
+            status="active" 
+            text={guardianMode ? "Guardian Mode ON" : "🛡️ GUARDIA ACTIVE"} 
+          />
+          <View style={styles.scorePill}>
+            <Text style={styles.scoreText}>100% SAFE</Text>
+          </View>
+        </View>
+
+        {/* Center Button */}
+        <View style={styles.centerButtonContainer}>
+          <SOSButton 
+            onPress={handleSOSPress}
+            onLongPress={handleSOSLongPress}
+            isActive={isSOSActive}
+          />
+        </View>
+      </SafeAreaView>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
-  titleContainer: {
+  container: {
+    flex: 1,
+    backgroundColor: COLORS.background,
+  },
+  overlay: {
+    ...StyleSheet.absoluteFillObject,
+    justifyContent: 'space-between',
+    padding: 20,
+    pointerEvents: 'box-none',
+  },
+  hudTop: {
     flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'flex-start',
+    pointerEvents: 'box-none',
+  },
+  scorePill: {
+    backgroundColor: 'rgba(26, 26, 36, 0.8)',
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: SIZES.pillRadius,
+    borderWidth: 1,
+    borderColor: COLORS.border,
+  },
+  scoreText: {
+    fontFamily: FONTS.mono,
+    color: '#00FF66',
+    fontSize: 12,
+  },
+  centerButtonContainer: {
     alignItems: 'center',
-    gap: 8,
-  },
-  stepContainer: {
-    gap: 8,
-    marginBottom: 8,
-  },
-  reactLogo: {
-    height: 178,
-    width: 290,
-    bottom: 0,
-    left: 0,
-    position: 'absolute',
-  },
+    marginBottom: 40,
+    pointerEvents: 'box-none',
+  }
 });
